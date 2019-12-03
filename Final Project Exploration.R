@@ -84,6 +84,32 @@ ggplot(data=final_t,mapping=aes(y=Gini, x=fct_reorder(Region,Gini, .desc=TRUE)))
        x="Country Region",
        y="Gini Coefficient")
 
+# Specific statistics for EDA
+final_t %>%
+  filter(Region == "Europe & Central Asia") %>%
+  summary()
+
+final_t %>%
+  filter(Region == "Europe & Central Asia") %>%
+  arrange(desc(Happiness)) %>%
+  head()
+
+final_t %>%
+  filter(Region == "Middle East & North Africa") %>%
+  summary()
+
+final_t %>%
+  filter(Region == "Latin America & Caribbean") %>%
+  summary()
+
+final_t %>%
+  filter(Region == "Sub-Saharan Africa") %>%
+  summary()
+
+final_t %>%
+  filter(Region == "North America") %>%
+  summary()
+
 ##2-var exploration
 ggpairs(data=final_t,columns=4:6) +
   labs(title="Relationship Between Gini Coefficient, GDP Growth, and Self-Reported Life Satisfaction",
