@@ -8,6 +8,7 @@ library(tree)
 library(klaR)
 library(data.table)
 library(mclust)
+library(broom)
 
 #Data Wrangling
 growth<-read_excel("API_NY.GDP.MKTP.KD.ZG_DS2_en_excel_v2_422103.xls")
@@ -84,32 +85,6 @@ ggplot(data=final_t,mapping=aes(y=Gini, x=fct_reorder(Region,Gini, .desc=TRUE)))
        x="Country Region",
        y="Gini Coefficient")
 
-# Specific statistics for EDA
-final_t %>%
-  filter(Region == "Europe & Central Asia") %>%
-  summary()
-
-final_t %>%
-  filter(Region == "Europe & Central Asia") %>%
-  arrange(desc(Happiness)) %>%
-  head()
-
-final_t %>%
-  filter(Region == "Middle East & North Africa") %>%
-  summary()
-
-final_t %>%
-  filter(Region == "Latin America & Caribbean") %>%
-  summary()
-
-final_t %>%
-  filter(Region == "Sub-Saharan Africa") %>%
-  summary()
-
-final_t %>%
-  filter(Region == "North America") %>%
-  summary()
-
 ##2-var exploration
 ggpairs(data=final_t,columns=4:6) +
   labs(title="Relationship Between Gini Coefficient, GDP Growth, and Self-Reported Life Satisfaction",
@@ -122,6 +97,23 @@ m1<-lm(Happiness~Gini+Growth+Region, data=final_t)
 summary(m1)
 residualPlots(m1)
 vif(m1)
+
+
+m.tidy <- tidy(m1, conf.int = TRUE) 
+m.tidy$term <- c("Intercept", "Gini", "GDP Growth", "Region: Europe + Central Asia", "Region: Latin America + Caribbean", "Region: Middle East + North Africa", "Region: North America", "Region: South Asia", "Region: Sub-Saharan Africa") # this just cleans up the names for the following visualization
+
+m.tidyf <- m.tidy[-1,]
+view(m.tidyf)
+ggplot(m.tidyf, aes(estimate, term)) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height =.2) +
+  geom_vline(xintercept = 0)+theme_wsj() +
+  xlab("Coefficient Estimate") +
+  ylab("Coefficient Term")+
+  ggtitle("Coefficient Plot")+
+  theme(title=element_text(size=18),
+        axis.title=element_text(size=16, face="bold"))
+
 
 
 m2<-lm(Happiness~Growth, data=final_t)
@@ -137,8 +129,6 @@ happiness_ml$increased<-c(0L, happiness_ml$Happiness[-1]  > happiness_ml$Happine
 happiness_ml$increased <- shift(ifelse(happiness_ml$Code[2:(nrow(happiness_ml)+1)] != happiness_ml$Code[1:nrow(happiness_ml)],
                                        NA,
                                        shift(happiness_ml$increased, -1)))
-
-happiness_ml_new<-happiness_ml
 
 happiness_ml<-happiness_ml%>%filter(!is.na(increased))
 
@@ -176,42 +166,6 @@ test.pred <- predict(test,
                      type="class")
 table(test.pred, hp_test$increased)
 (104+26)/(22+117+104+26)
-
-#Tree with Gini Growth
-happiness_ml_new$GiniGrowth<-happiness_ml_new$Gini
-happiness_ml_new<-happiness_ml_new %>%
-  mutate(GiniGrowth=(Gini-lag(Gini))/lag(Gini))
-happiness_ml_new<-happiness_ml_new%>%filter(!is.na(increased))
-
-## Random sample indexes
-set.seed(7)
-traing_index <- sample(1:nrow(happiness_ml_new), 0.5 * nrow(happiness_ml_new))
-testg_index <- setdiff(1:nrow(happiness_ml_new), traing_index)
-
-## Build training and testing datasets
-hp_g_train <- happiness_ml_new[traing_index,]
-hp_g_test <- happiness_ml_new[testg_index,]
-
-##Build trees
-hp.g.tree <- tree(factor(increased) ~ GiniGrowth+Growth+factor(Region),
-                data = hp_g_train, method="class")
-plot(hp.g.tree)
-text(hp.g.tree)
-hp.g.tree.pred <- predict(hp.g.tree,
-                          as.data.frame(hp_g_test),
-                          type="class")
-table(hp.g.tree.pred, hp_g_test$increased)
-(66+59)/(62+82+66+59)
-
-##Pruned tree
-test1<-prune.tree(hp.g.tree, best=3)
-plot(test1)
-text(test1)
-test1.pred <- predict(test1,
-                      as.data.frame(hp_g_test),
-                      type="class")
-table(test1.pred, hp_g_test$increased)
-(111+5)/(17+136+111+5)
 
 #QDA Model--unused
 pairs(hp_train[,c(4,5,6)],
