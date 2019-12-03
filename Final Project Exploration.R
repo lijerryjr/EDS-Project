@@ -112,6 +112,8 @@ happiness_ml$increased <- shift(ifelse(happiness_ml$Code[2:(nrow(happiness_ml)+1
                                        NA,
                                        shift(happiness_ml$increased, -1)))
 
+happiness_ml_new<-happiness_ml
+
 happiness_ml<-happiness_ml%>%filter(!is.na(increased))
 
 happiness_ml %>%
@@ -148,6 +150,42 @@ test.pred <- predict(test,
                      type="class")
 table(test.pred, hp_test$increased)
 (104+26)/(22+117+104+26)
+
+#Tree with Gini Growth
+happiness_ml_new$GiniGrowth<-happiness_ml_new$Gini
+happiness_ml_new<-happiness_ml_new %>%
+  mutate(GiniGrowth=(Gini-lag(Gini))/lag(Gini))
+happiness_ml_new<-happiness_ml_new%>%filter(!is.na(increased))
+
+## Random sample indexes
+set.seed(7)
+traing_index <- sample(1:nrow(happiness_ml_new), 0.5 * nrow(happiness_ml_new))
+testg_index <- setdiff(1:nrow(happiness_ml_new), traing_index)
+
+## Build training and testing datasets
+hp_g_train <- happiness_ml_new[traing_index,]
+hp_g_test <- happiness_ml_new[testg_index,]
+
+##Build trees
+hp.g.tree <- tree(factor(increased) ~ GiniGrowth+Growth+factor(Region),
+                data = hp_g_train, method="class")
+plot(hp.g.tree)
+text(hp.g.tree)
+hp.g.tree.pred <- predict(hp.g.tree,
+                          as.data.frame(hp_g_test),
+                          type="class")
+table(hp.g.tree.pred, hp_g_test$increased)
+(66+59)/(62+82+66+59)
+
+##Pruned tree
+test1<-prune.tree(hp.g.tree, best=3)
+plot(test1)
+text(test1)
+test1.pred <- predict(test1,
+                      as.data.frame(hp_g_test),
+                      type="class")
+table(test1.pred, hp_g_test$increased)
+(111+5)/(17+136+111+5)
 
 #QDA Model--unused
 pairs(hp_train[,c(4,5,6)],
