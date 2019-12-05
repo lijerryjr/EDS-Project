@@ -12,6 +12,7 @@ library(klaR)
 library(data.table)
 library(mclust)
 library(broom)
+library(stargazer)
 
 #######################################################
 #Data Wrangling--Create Final Dataset
@@ -169,12 +170,12 @@ m.tidy <- tidy(m1, conf.int = TRUE)
 m.tidy$term <- c("Intercept",
                  "Gini", 
                  "GDP Growth", 
-                 "Region: Europe + Central Asia", 
-                 "Region: Latin America + Caribbean", 
-                 "Region: Middle East + North Africa", 
-                 "Region: North America", 
-                 "Region: South Asia", 
-                 "Region: Sub-Saharan Africa") #this just cleans up the names for the following visualization
+                 "Europe + Central Asia", 
+                 "Latin America + Caribbean", 
+                 "Middle East + North Africa", 
+                 "North America", 
+                 "South Asia", 
+                 "Sub-Saharan Africa") #this just cleans up the names for the following visualization
 m.tidyf <- m.tidy[-1,]
 view(m.tidyf)
 ggplot(m.tidyf, aes(estimate, term)) +
